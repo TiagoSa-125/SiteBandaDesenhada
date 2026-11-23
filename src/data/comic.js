@@ -2,6 +2,7 @@
 // basta editar esta lista (as imagens vivem em /public/pages).
 
 export const COMIC = {
+  cover: 'capa.webp',
   title: 'O Roncador',
   subtitle: 'Fama a qualquer preço',
   description:

@@ -71,29 +71,12 @@
   color: var(--muted);
 }
 
-/* Pré-visualização da capa, com ar de livro */
+/* Capa (a animação 3D vive em cover.css, no bloco abaixo) */
 .intro__cover {
   order: 2;
   flex: none;
-  width: clamp(210px, 25vw, 370px);
+  width: clamp(220px, min(30vw, 52vh), 440px);
   aspect-ratio: 2 / 3;
-  perspective: 1800px;
-}
-
-.intro__cover img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 3px 6px 6px 3px;
-  transform: rotateY(-16deg) rotateX(2deg);
-  transform-origin: left center;
-  box-shadow:
-    0 50px 80px -25px rgba(0, 0, 0, 0.8),
-    0 20px 40px -15px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(255, 255, 255, 0.06);
-  user-select: none;
-  -webkit-user-drag: none;
 }
 
 .intro__text > * {
@@ -115,7 +98,7 @@
   }
   .intro__cover {
     order: 1;
-    width: min(44vw, 210px);
+    width: min(52vw, 240px);
   }
   .intro__text {
     order: 2;
@@ -132,4 +115,104 @@
 
 @keyframes intro-out {
   to { opacity: 0; transform: scale(0.985); }
+}
+
+/* ---------- Capa 3D ---------- */
+.cover {
+  --rx: 3deg;
+  --ry: -12deg;
+  --gx: 50%;
+  --gy: 50%;
+  --shx: -14px;
+  --shy: 0px;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  perspective: 1400px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cover__body {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx)) rotateY(var(--ry)) scale(1);
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.cover[data-active='true'] .cover__body {
+  transform: rotateX(var(--rx)) rotateY(var(--ry)) scale(1.035);
+  transition: transform 0.18s ease-out;
+}
+
+.cover__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 3px 8px 8px 3px;
+  user-select: none;
+  -webkit-user-drag: none;
+  box-shadow:
+    var(--shx) calc(46px + var(--shy)) 80px -24px rgba(0, 0, 0, 0.85),
+    calc(var(--shx) * 0.5) calc(18px + var(--shy)) 34px -14px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.07);
+  transition: box-shadow 0.4s var(--ease);
+}
+
+.cover[data-active='true'] .cover__img {
+  transition: box-shadow 0.12s ease-out;
+}
+
+/* Lombada do livro */
+.cover__spine {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px 8px 8px 3px;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.5) 0,
+    rgba(255, 255, 255, 0.1) 2.2%,
+    rgba(0, 0, 0, 0.18) 4.5%,
+    transparent 9%
+  );
+}
+
+/* Brilho que segue o cursor */
+.cover__glare {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px 8px 8px 3px;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at var(--gx) var(--gy),
+    rgba(255, 255, 255, 0.32),
+    rgba(255, 255, 255, 0.06) 38%,
+    transparent 62%
+  );
+  transition: opacity 0.4s var(--ease);
+}
+
+.cover[data-active='true'] .cover__glare {
+  opacity: 1;
+}
+
+.cover:focus-visible {
+  outline-offset: 10px;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cover__body,
+  .cover[data-active='true'] .cover__body {
+    transform: none;
+  }
 }
