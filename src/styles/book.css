@@ -1,0 +1,221 @@
+/* ---------- Dimensões ----------
+   Duas páginas 2:3 lado a lado => livro 4:3.
+   A altura é a menor entre o espaço vertical livre e o que a largura permite. */
+.book {
+  --avail-h: calc(100vh - var(--chrome));
+  --h: min(var(--avail-h), calc((100vw - var(--gutter) * 2) * 0.75));
+  position: relative;
+  width: calc(var(--h) * 4 / 3);
+  height: var(--h);
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  animation: book-in 0.8s var(--ease) both;
+}
+
+@supports (height: 100dvh) {
+  .book {
+    --avail-h: calc(100dvh - var(--chrome));
+  }
+}
+
+.book[data-mode='single'] {
+  --h: min(var(--avail-h), calc((100vw - var(--gutter) * 2) * 1.5));
+  width: calc(var(--h) * 2 / 3);
+}
+
+/* Folha de papel por baixo: sombras à volta do livro */
+.book__sheet {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  box-shadow:
+    0 50px 90px -30px rgba(0, 0, 0, 0.85),
+    0 24px 44px -18px rgba(0, 0, 0, 0.6),
+    0 2px 6px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.book__stage {
+  position: absolute;
+  inset: 0;
+  perspective: 4600px;
+  perspective-origin: 50% 40%;
+}
+
+.book__slot {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+}
+.book__slot--left { left: 0; }
+.book__slot--right { left: 50%; }
+
+/* ---------- Página ---------- */
+.page {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #09101c;
+}
+
+.page img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* nunca corta a imagem */
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.page--left { border-radius: 6px 0 0 6px; }
+.page--right { border-radius: 0 6px 6px 0; }
+.page--single { border-radius: 6px; }
+
+/* Lombada + fio de luz no bordo, como papel real */
+.page::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.page--left::after {
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.12) 4%, transparent 11%);
+}
+.page--right::after {
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.12) 4%, transparent 11%);
+}
+.page--single::after {
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.3), transparent 6%);
+}
+
+/* Sombra projetada pela folha que vira */
+.page__cast {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0) 75%);
+}
+.page--left .page__cast {
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0) 75%);
+}
+.page[data-cast='fade'] .page__cast {
+  animation: cast-fade var(--flip-ms) cubic-bezier(0.55, 0.06, 0.25, 1) forwards;
+}
+.page[data-cast='rise'] .page__cast {
+  animation: cast-rise var(--flip-ms) cubic-bezier(0.55, 0.06, 0.25, 1) forwards;
+}
+
+/* Modo uma página */
+.book[data-mode='single'] .book__stage > .page {
+  inset: 0;
+}
+
+/* ---------- Folha animada ---------- */
+.leaf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  z-index: 5;
+  transform-style: preserve-3d;
+  will-change: transform;
+  animation-duration: var(--flip-ms);
+  animation-timing-function: cubic-bezier(0.55, 0.06, 0.25, 1);
+  animation-fill-mode: forwards;
+}
+
+.leaf--next { left: 50%; transform-origin: left center; animation-name: turn-next; }
+.leaf--prev { left: 0; transform-origin: right center; animation-name: turn-prev; }
+
+.leaf--single { left: 0; width: 100%; transform-origin: left center; }
+.leaf--single.leaf--next { animation-name: turn-away; }
+.leaf--single.leaf--prev { animation-name: turn-back; }
+
+.leaf__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.leaf__face--back { transform: rotateY(180deg); }
+
+.leaf__shade {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  animation: leaf-shade var(--flip-ms) ease-in-out forwards;
+}
+
+/* ---------- Zonas clicáveis ---------- */
+.zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.3s var(--ease);
+}
+.zone--prev { left: 0; width: 50%; border-radius: 6px 0 0 6px; }
+.zone--next { right: 0; width: 50%; border-radius: 0 6px 6px 0; }
+.zone[aria-disabled='true'] { cursor: default; }
+
+.book[data-mode='single'] .zone--prev { width: 35%; }
+.book[data-mode='single'] .zone--next { width: 65%; }
+
+@media (hover: hover) {
+  .zone--next:not([aria-disabled='true']):hover {
+    background: linear-gradient(to left, rgba(255, 255, 255, 0.07), transparent 35%);
+  }
+  .zone--prev:not([aria-disabled='true']):hover {
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.07), transparent 35%);
+  }
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes turn-next {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(-180deg); }
+}
+@keyframes turn-prev {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(180deg); }
+}
+@keyframes turn-away {
+  0% { transform: rotateY(0deg); opacity: 1; }
+  65% { opacity: 1; }
+  100% { transform: rotateY(-100deg); opacity: 0; }
+}
+@keyframes turn-back {
+  0% { transform: rotateY(-100deg); opacity: 0; }
+  35% { opacity: 1; }
+  100% { transform: rotateY(0deg); opacity: 1; }
+}
+@keyframes leaf-shade {
+  0% { opacity: 0; }
+  50% { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+@keyframes cast-fade {
+  from { opacity: 0.9; }
+  to { opacity: 0; }
+}
+@keyframes cast-rise {
+  from { opacity: 0; }
+  to { opacity: 0.9; }
+}
+@keyframes book-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.975); }
+  to { opacity: 1; transform: none; }
+}
