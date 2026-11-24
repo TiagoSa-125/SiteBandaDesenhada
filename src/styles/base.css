@@ -93,6 +93,12 @@ button {
   background: rgba(255, 255, 255, 0.06);
 }
 
+.icon-btn.is-active {
+  color: var(--accent);
+  border-color: rgba(233, 185, 73, 0.55);
+  background: rgba(233, 185, 73, 0.08);
+}
+
 .icon-btn:disabled {
   opacity: 0.25;
   cursor: default;

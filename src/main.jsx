@@ -5,6 +5,7 @@ import './styles/base.css'
 import './styles/intro.css'
 import './styles/reader.css'
 import './styles/book.css'
+import './styles/zoom.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

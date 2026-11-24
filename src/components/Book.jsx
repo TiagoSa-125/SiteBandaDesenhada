@@ -15,6 +15,7 @@ export default function Book({
   canNext,
   onPrev,
   onNext,
+  pick,
   swipeHandlers,
 }) {
   const at = (i) => pages[i] ?? null
@@ -92,6 +93,7 @@ export default function Book({
     <div
       className="book"
       data-mode={single ? 'single' : 'double'}
+      data-pick={pick ? 'true' : undefined}
       style={{ '--flip-ms': `${FLIP_MS}ms` }}
       {...swipeHandlers}
     >
@@ -104,7 +106,7 @@ export default function Book({
       <button
         type="button"
         className="zone zone--prev"
-        aria-label="Página anterior"
+        aria-label={pick ? 'Ampliar página da esquerda' : 'Página anterior'}
         aria-disabled={!canPrev}
         tabIndex={-1}
         onClick={onPrev}
@@ -112,7 +114,7 @@ export default function Book({
       <button
         type="button"
         className="zone zone--next"
-        aria-label="Página seguinte"
+        aria-label={pick ? 'Ampliar página da direita' : 'Página seguinte'}
         aria-disabled={!canNext}
         tabIndex={-1}
         onClick={onNext}
