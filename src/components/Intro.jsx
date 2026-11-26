@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { COMIC } from '../data/comic.js'
+import Backdrop from './Backdrop.jsx'
 import Cover from './Cover.jsx'
 import { ArrowRight } from './Icons.jsx'
 
@@ -14,7 +15,7 @@ export default function Intro({ onStart }) {
 
   return (
     <main className={`intro ${leaving ? 'is-leaving' : ''}`}>
-      <div className="backdrop" aria-hidden="true" />
+      <Backdrop />
 
       <div className="intro__cover">
         <Cover src={COMIC.cover} alt={`Capa de ${COMIC.title} — ${COMIC.subtitle}`} onClick={start} />

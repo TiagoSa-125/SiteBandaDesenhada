@@ -1,0 +1,193 @@
+/* ---------- Fundo ----------
+   Azul-noite + luz de cima, raios com deriva lenta, poucas bolhas e (no leitor)
+   um "ambilight" que toma as cores dos bordos das páginas. */
+
+/* Registadas para o browser conseguir animar a mudança de cor entre páginas */
+@property --glow-l {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #0f2a4a;
+}
+@property --glow-r {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #0f2a4a;
+}
+
+.reader {
+  --glow-l: #0f2a4a;
+  --glow-r: #0f2a4a;
+  transition:
+    --glow-l 1.6s ease,
+    --glow-r 1.6s ease;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(1100px 700px at 50% 18%, #10274a 0%, transparent 70%),
+    radial-gradient(900px 600px at 85% 105%, #0a1b33 0%, transparent 70%),
+    var(--bg);
+}
+
+/* No leitor, soma-se um brilho suave de cada lado, na cor da página respetiva */
+.reader .backdrop {
+  background:
+    radial-gradient(60vw 85vh at 2% 58%, color-mix(in srgb, var(--glow-l) 62%, transparent), transparent 70%),
+    radial-gradient(60vw 85vh at 98% 58%, color-mix(in srgb, var(--glow-r) 62%, transparent), transparent 70%),
+    radial-gradient(1100px 700px at 50% 18%, #10274a 0%, transparent 70%),
+    radial-gradient(900px 600px at 85% 105%, #0a1b33 0%, transparent 70%),
+    var(--bg);
+}
+
+/* Raios de luz: deriva lenta de um lado para o outro */
+.backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0 -12%;
+  background: repeating-linear-gradient(
+    104deg,
+    transparent 0 110px,
+    rgba(130, 190, 255, 0.035) 110px 190px,
+    transparent 190px 320px
+  );
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent 75%);
+  mask-image: linear-gradient(to bottom, #000, transparent 75%);
+  animation: rays-drift 52s ease-in-out infinite alternate;
+}
+
+/* Bolhas: poucas, pequenas e quase transparentes */
+.bubbles {
+  position: absolute;
+  inset: 0;
+}
+
+.bubble {
+  position: absolute;
+  bottom: -24px;
+  border-radius: 50%;
+  border: 1px solid rgba(170, 215, 255, 0.55);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), transparent 62%);
+  opacity: 0;
+  animation: bubble-rise linear infinite;
+  will-change: transform, opacity;
+}
+
+/* Peixes: silhuetas simples a passar, muito discretas e por trás das páginas */
+.fishes {
+  position: absolute;
+  inset: 0;
+}
+
+.fish {
+  position: absolute;
+  left: 0;
+  color: rgb(140, 195, 240);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+.fish--right { animation-name: fish-right; }
+.fish--left { animation-name: fish-left; }
+
+.fish__bob {
+  display: block;
+  animation: fish-bob 6.5s ease-in-out infinite;
+}
+
+.fish__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  fill: currentColor;
+  overflow: visible;
+}
+
+/* O desenho aponta para a direita; os que vão para a esquerda espelham-se */
+.fish--left .fish__svg {
+  transform: scaleX(-1);
+}
+
+.fish__tail {
+  transform-box: fill-box;
+  transform-origin: 100% 50%;
+  animation: fish-tail 0.9s ease-in-out infinite alternate;
+}
+
+/* Cardume: vários peixes pequenos em formação solta */
+.fish--school {
+  width: 120px;
+  height: 40px;
+}
+.fish__member {
+  position: absolute;
+}
+
+@keyframes fish-right {
+  from { transform: translate3d(-16vw, 0, 0); }
+  to { transform: translate3d(116vw, 0, 0); }
+}
+@keyframes fish-left {
+  from { transform: translate3d(116vw, 0, 0); }
+  to { transform: translate3d(-16vw, 0, 0); }
+}
+@keyframes fish-bob {
+  0%, 100% { transform: translateY(-6px); }
+  50% { transform: translateY(6px); }
+}
+@keyframes fish-tail {
+  from { transform: rotate(-9deg); }
+  to { transform: rotate(9deg); }
+}
+
+@keyframes bubble-rise {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: var(--op);
+  }
+  30% {
+    transform: translate3d(calc(var(--sway) * 0.6), -35vh, 0);
+  }
+  60% {
+    transform: translate3d(calc(var(--sway) * -0.3), -70vh, 0);
+  }
+  92% {
+    opacity: var(--op);
+  }
+  100% {
+    transform: translate3d(calc(var(--sway) * 0.4), -112vh, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes rays-drift {
+  from {
+    transform: translateX(-4%);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateX(4%);
+    opacity: 1;
+  }
+}
+
+/* Sem movimento: fica o fundo estático (sem bolhas nem deriva) */
+@media (prefers-reduced-motion: reduce) {
+  .bubbles,
+  .fishes {
+    display: none;
+  }
+  .backdrop::before {
+    animation: none !important;
+  }
+  .reader {
+    transition: none;
+  }
+}

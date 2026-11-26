@@ -74,19 +74,109 @@
 }
 
 .progress {
-  width: min(300px, 62vw);
-  height: 2px;
-  border-radius: 2px;
-  background: rgba(236, 230, 214, 0.1);
-  overflow: hidden;
+  display: flex;
+  gap: 5px;
+  width: min(360px, 72vw);
 }
 
-.progress__fill {
+.progress__seg {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 20px; /* área de toque maior do que a barra */
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.progress__bar {
+  position: relative;
+  display: block;
   width: 100%;
-  height: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(236, 230, 214, 0.12);
+  overflow: hidden;
+  transition: height 0.2s var(--ease);
+}
+
+.progress__bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   background: var(--accent);
+  transform: scaleX(0);
   transform-origin: left center;
   transition: transform 0.7s var(--ease);
+}
+
+.progress__seg.is-read .progress__bar::after {
+  transform: scaleX(1);
+}
+
+.progress__seg:hover .progress__bar,
+.progress__seg:focus-visible .progress__bar {
+  height: 4px;
+}
+
+/* Miniatura ao passar o rato */
+.progress__thumb {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  z-index: 20;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 8px 8px 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(8, 14, 26, 0.93);
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.75);
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  pointer-events: none;
+  transition:
+    opacity 0.2s var(--ease),
+    transform 0.2s var(--ease);
+}
+
+.progress__seg:hover .progress__thumb,
+.progress__seg:focus-visible .progress__thumb {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.progress__imgs {
+  display: flex;
+  gap: 3px;
+}
+
+.progress__imgs img {
+  display: block;
+  width: 64px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 2px;
+  -webkit-user-drag: none;
+}
+
+.progress__cap {
+  font-size: 0.64rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+@media (hover: none) {
+  .progress__thumb {
+    display: none;
+  }
 }
 
 @media (max-width: 600px) {

@@ -38,3 +38,10 @@ export const MinusIcon = (p) => (
 export const CloseIcon = (p) => (
   <svg {...base} {...p}><path d="m6 6 12 12M18 6 6 18" /></svg>
 )
+
+export const ReplayIcon = (p) => (
+  <svg {...base} {...p}>
+    <path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5" />
+    <path d="M4 4.5v4h4" />
+  </svg>
+)

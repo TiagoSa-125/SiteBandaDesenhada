@@ -8,6 +8,6 @@ export default function App() {
   return screen === 'intro' ? (
     <Intro onStart={() => setScreen('reader')} />
   ) : (
-    <Reader onHome={() => setScreen('intro')} />
+    <Reader fromIntro onHome={() => setScreen('intro')} />
   )
 }

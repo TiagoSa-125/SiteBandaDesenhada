@@ -1,30 +1,78 @@
 import { useEffect, useState } from 'react'
 import { COMIC, PAGES } from '../data/comic.js'
 import { useMediaQuery } from '../hooks/useMediaQuery.js'
-import { usePageTurn } from '../hooks/usePageTurn.js'
+import { usePageTurn, OPEN_MS, OPEN_DELAY } from '../hooks/usePageTurn.js'
 import { useKeyboardNav } from '../hooks/useKeyboardNav.js'
 import { useSwipe } from '../hooks/useSwipe.js'
+import Backdrop from './Backdrop.jsx'
 import Book from './Book.jsx'
 import Pager from './Pager.jsx'
 import ZoomViewer from './ZoomViewer.jsx'
+import EndScreen from './EndScreen.jsx'
 import IconButton from './IconButton.jsx'
 import { HomeIcon, ZoomIcon } from './Icons.jsx'
 
-export default function Reader({ onHome }) {
+const COVER = { src: COMIC.cover, alt: `Capa de ${COMIC.title} — ${COMIC.subtitle}` }
+
+export default function Reader({ onHome, fromIntro = false }) {
   const single = useMediaQuery('(max-width: 720px)')
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const total = PAGES.length
 
-  const { left, step, flip, canPrev, canNext, next, prev } = usePageTurn({
+  const { left, step, flip, canPrev, canNext, goTo, next, prev } = usePageTurn({
     total,
     single,
     reducedMotion,
   })
 
+  // --- Capa a abrir (só quando se vem do ecrã inicial) ---
+  const [entry] = useState(() => (fromIntro && !reducedMotion ? 'open' : 'fade'))
+  const [phase, setPhase] = useState(entry === 'open' ? 'running' : 'done')
+  const ready = phase === 'done'
+
+  useEffect(() => {
+    if (phase !== 'running') return
+    const t = setTimeout(() => setPhase('settling'), OPEN_DELAY + OPEN_MS)
+    return () => clearTimeout(t)
+  }, [phase])
+
+  useEffect(() => {
+    if (phase !== 'settling') return
+    let r2
+    const r1 = requestAnimationFrame(() => {
+      r2 = requestAnimationFrame(() => setPhase('done'))
+    })
+    return () => {
+      cancelAnimationFrame(r1)
+      cancelAnimationFrame(r2)
+    }
+  }, [phase])
+
+  // --- Ampliar / ecrã final ---
   const [zoomPage, setZoomPage] = useState(null) // página aberta no visualizador
   const [pick, setPick] = useState(false) // modo "escolher página a ampliar" (só em duas páginas)
+  const [showEnd, setShowEnd] = useState(false)
 
-  useKeyboardNav({ onPrev: prev, onNext: next, enabled: !zoomPage })
+  const atEnd = left + step >= total
+  const idle = ready && !flip
+  const prevEnabled = ready && canPrev
+  const nextEnabled = idle && (canNext || atEnd)
+
+  const back = () => {
+    if (prevEnabled) prev()
+  }
+  // No fim, "avançar" mostra o ecrã final em vez de virar página.
+  const forward = () => {
+    if (!idle) return
+    if (atEnd) setShowEnd(true)
+    else next()
+  }
+
+  useKeyboardNav({
+    onPrev: back,
+    onNext: forward,
+    enabled: !zoomPage && !showEnd && ready,
+  })
 
   useEffect(() => {
     if (single) setPick(false)
@@ -37,7 +85,7 @@ export default function Reader({ onHome }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [pick])
 
-  const { swiped, handlers } = useSwipe({ onSwipeLeft: next, onSwipeRight: prev })
+  const { swiped, handlers } = useSwipe({ onSwipeLeft: forward, onSwipeRight: back })
 
   // Pré-carregar todas as imagens para a viragem nunca mostrar páginas em branco.
   useEffect(() => {
@@ -54,17 +102,31 @@ export default function Reader({ onHome }) {
 
   // Em modo de uma página, a lupa abre logo essa página; em duas, pede para escolher.
   const onZoomButton = () => {
-    if (flip) return
+    if (!idle) return
     if (single) setZoomPage(PAGES[left])
     else setPick((p) => !p)
   }
 
   const onPick = (offset) => {
     const target = PAGES[left + offset]
-    if (flip || !target) return
+    if (!idle || !target) return
     setPick(false)
     setZoomPage(target)
   }
+
+  const jump = (index) => {
+    if (idle) goTo(index)
+  }
+
+  const replay = () => {
+    setShowEnd(false)
+    goTo(0)
+  }
+
+  // --- Ambilight: o fundo toma as cores dos bordos das páginas (já a pensar no destino da viragem) ---
+  const lead = flip ? flip.to : left
+  const glowL = PAGES[lead].glow.l
+  const glowR = single ? PAGES[lead].glow.r : (PAGES[lead + 1] ?? PAGES[lead]).glow.r
 
   const last = Math.min(left + step, total)
   const label = single
@@ -73,8 +135,8 @@ export default function Reader({ onHome }) {
   const pagerLabel = pick ? 'Escolhe a página a ampliar' : label
 
   return (
-    <div className="reader">
-      <div className="backdrop" aria-hidden="true" />
+    <div className="reader" style={{ '--glow-l': glowL, '--glow-r': glowR }}>
+      <Backdrop />
 
       <header className="reader__top">
         <IconButton label="Voltar ao início" onClick={onHome}>
@@ -84,7 +146,7 @@ export default function Reader({ onHome }) {
           <span>{COMIC.title}</span>
           <span className="reader__title-sub"> — {COMIC.subtitle}</span>
         </p>
-        <IconButton label="Ampliar página" onClick={onZoomButton} active={pick}>
+        <IconButton label="Ampliar página" onClick={onZoomButton} active={pick} disabled={!ready}>
           <ZoomIcon />
         </IconButton>
       </header>
@@ -95,10 +157,13 @@ export default function Reader({ onHome }) {
           left={left}
           single={single}
           flip={flip}
-          canPrev={pick || canPrev}
-          canNext={pick || canNext}
-          onPrev={onZone(pick ? () => onPick(0) : prev)}
-          onNext={onZone(pick ? () => onPick(1) : next)}
+          phase={phase}
+          entry={entry}
+          cover={COVER}
+          canPrev={pick ? ready : prevEnabled}
+          canNext={pick ? ready : nextEnabled}
+          onPrev={onZone(pick ? () => onPick(0) : back)}
+          onNext={onZone(pick ? () => onPick(1) : forward)}
           pick={pick}
           swipeHandlers={handlers}
         />
@@ -106,14 +171,22 @@ export default function Reader({ onHome }) {
 
       <Pager
         label={pagerLabel}
-        progress={last / total}
-        canPrev={canPrev}
-        canNext={canNext}
-        onPrev={prev}
-        onNext={next}
+        pages={PAGES}
+        views={Math.ceil(total / step)}
+        step={step}
+        current={left / step}
+        canPrev={prevEnabled}
+        canNext={nextEnabled}
+        nextIsEnd={atEnd}
+        onPrev={back}
+        onNext={forward}
+        onJump={jump}
       />
 
       {zoomPage && <ZoomViewer page={zoomPage} onClose={() => setZoomPage(null)} />}
+      {showEnd && (
+        <EndScreen onReplay={replay} onClose={() => setShowEnd(false)} onHome={onHome} />
+      )}
     </div>
   )
 }

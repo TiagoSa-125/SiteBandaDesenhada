@@ -1,16 +1,24 @@
 import Page from './Page.jsx'
 import Leaf from './Leaf.jsx'
-import { FLIP_MS } from '../hooks/usePageTurn.js'
+import { FLIP_MS, OPEN_MS, OPEN_DELAY } from '../hooks/usePageTurn.js'
 
 /**
  * Apresenta uma ou duas páginas e a folha animada.
  * Toda a lógica de estado vem de fora (Reader) — aqui só se decide o que desenhar.
+ *
+ * phase: 'running' | 'settling' | 'done' — a capa a abrir no arranque.
+ *   Em 'running' a capa (fechada) está à direita; ao abrir revela as primeiras páginas.
+ * entry: 'open' | 'fade' — como o livro entra (fica fixo durante toda a vida do componente,
+ *   para a animação de entrada nunca recomeçar).
  */
 export default function Book({
   pages,
   left,
   single,
   flip,
+  phase = 'done',
+  entry = 'fade',
+  cover,
   canPrev,
   canNext,
   onPrev,
@@ -19,13 +27,41 @@ export default function Book({
   swipeHandlers,
 }) {
   const at = (i) => pages[i] ?? null
+  const opening = phase !== 'done'
   const active = flip && !flip.done // a folha ainda está em movimento
   const next = flip?.dir === 'next'
 
   let content
   let leaf = null
 
-  if (single) {
+  if (opening) {
+    // Capa a abrir: a folha da frente é a capa, o verso é a página 1.
+    if (single) {
+      content = <Page page={at(0)} side="single" cast="fade" />
+      leaf = <Leaf dir="next" single opening front={cover} frontSide="single" />
+    } else {
+      content = (
+        <>
+          <div className="book__slot book__slot--left">
+            <Page page={at(0)} side="left" />
+          </div>
+          <div className="book__slot book__slot--right">
+            <Page page={at(1)} side="right" cast="fade" />
+          </div>
+        </>
+      )
+      leaf = (
+        <Leaf
+          dir="next"
+          opening
+          front={cover}
+          back={at(0)}
+          frontSide="right"
+          backSide="left"
+        />
+      )
+    }
+  } else if (single) {
     // Uma página de cada vez
     const baseIndex = active ? (next ? flip.to : flip.from) : left
     const cast = active ? (next ? 'fade' : 'rise') : undefined
@@ -93,8 +129,14 @@ export default function Book({
     <div
       className="book"
       data-mode={single ? 'single' : 'double'}
+      data-entry={entry}
+      data-opening={phase === 'running' ? 'true' : undefined}
       data-pick={pick ? 'true' : undefined}
-      style={{ '--flip-ms': `${FLIP_MS}ms` }}
+      style={{
+        '--flip-ms': `${opening ? OPEN_MS : FLIP_MS}ms`,
+        '--open-ms': `${OPEN_MS}ms`,
+        '--open-delay': `${OPEN_DELAY}ms`,
+      }}
       {...swipeHandlers}
     >
       <div className="book__sheet" aria-hidden="true" />
